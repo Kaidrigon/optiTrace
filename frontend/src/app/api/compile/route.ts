@@ -1,6 +1,5 @@
 ﻿import { NextResponse } from "next/server";
 import { compileSource } from "../../../../../compiler/src/index";
-import { formatIR } from "../../../../../compiler/src/ir/format";
 
 export const runtime = "nodejs";
 
@@ -66,8 +65,8 @@ export async function POST(request: Request) {
       stages: result.stages.map((stage) => ({
         name: stage.name,
         changedCount: stage.changedCount,
-        before: formatIR(stage.instructionsBefore),
-        after: formatIR(stage.instructionsAfter),
+        before: stage.instructionsBefore,
+        after: stage.instructionsAfter,
       })),
       totalChangedCount: result.stages.reduce(
         (total, stage) => total + stage.changedCount,
@@ -81,8 +80,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-
-
-
-
