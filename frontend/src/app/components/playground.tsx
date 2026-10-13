@@ -36,7 +36,7 @@ const initialSource = [
   "let base = 6;",
   "let scale = 7;",
   "let total = base * scale;",
-  "print total;",
+  "print (total);",
 ].join("\n");
 
 const initialOptions: CompileOptions = {

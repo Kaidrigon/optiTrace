@@ -1251,18 +1251,21 @@ main {
   letter-spacing: -0.035em;
 }
 
+
+
 .source-input {
   display: block;
   width: 100%;
   min-height: 220px;
   resize: vertical;
   padding: 18px;
-  border: 1px solid var(--line, rgba(128, 128, 128, 0.3));
+  border: 1px solid #3b4b63;
   border-radius: 5px;
   outline: none;
-  background: var(--surface, #111);
-  color: var(--foreground, #f5f5f5);
-  font-family: var(--font-mono, monospace);
+  background: #111827 !important;
+  color: #f1f5f9 !important;
+  caret-color: #60a5fa;
+  font-family: var(--mono);
   font-size: 13px;
   line-height: 1.9;
   tab-size: 2;
@@ -1270,13 +1273,15 @@ main {
 }
 
 .source-input:focus {
-  border-color: var(--accent, #b7a17a);
-  box-shadow: 0 0 0 2px rgba(183, 161, 122, 0.12);
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgb(96 165 250 / 20%);
 }
 
 .source-input::placeholder {
-  opacity: 0.5;
+  color: #94a3b8 !important;
+  opacity: 1;
 }
+
 
 .pass-controls {
   margin-top: 30px;
