@@ -263,3 +263,146 @@ easier to describe, validate, and repeat**.
 We will start with one real use case, define the smallest useful syntax,
 and implement the full path from source text to a working OptiTrace
 action. Everything else can wait until the first slice works.
+
+
+OTL Language Reference
+
+OTL (OptiTrace Language) is the small procedural language used by OptiTrace. Programs are lexed, parsed into an AST, converted to IR, and then run through the optimization passes.
+
+Quick facts: file extension .otl · case-sensitive · statements end with ; · whitespace is ignored · // line comments · no strings, loops, or functions.
+
+Contents: Example · Statements · Expressions · Lexical rules · Errors · Common mistakes
+
+Example
+let base = 6;
+let scale = 7;
+let total = base * scale;
+
+if (total > 40) {
+  print (total);
+} else {
+  print (0);
+}
+
+After constant propagation and folding, total becomes 42 and the computation disappears:
+
+let x = 6;          let z = 42;
+let y = 7;
+let z = x * y;
+Statements
+Statement	Syntax	Notes
+Declaration	let name = expr;	
+Assignment	name = expr;	
+Print	print (expr);	parentheses required
+If	if (expr) { ... }	braces required
+If / else	if (expr) { ... } else { ... }	
+Else if	if (a) { ... } else if (b) { ... } else { ... }	chains; final else optional
+Block	{ ... }	can nest
+
+Expression-only statements such as x + 1; are not allowed.
+
+<details> <summary>Grammar</summary>
+program      := statement* EOF
+statement    := let_stmt | assign_stmt | print_stmt | if_stmt | block
+
+let_stmt     := "let" IDENT "=" expr ";"
+assign_stmt  := IDENT "=" expr ";"
+print_stmt   := "print" "(" expr ")" ";"
+if_stmt      := "if" "(" expr ")" block ( "else" ( if_stmt | block ) )?
+block        := "{" statement* "}"
+
+expr         := equality
+equality     := comparison ( ("==" | "!=") comparison )*
+comparison   := term ( ("<" | ">" | "<=" | ">=") term )*
+term         := factor ( ("+" | "-") factor )*
+factor       := unary ( ("*" | "/" | "%") unary )*
+unary        := ("-" | "!") unary | primary
+primary      := NUMBER | "true" | "false" | IDENT | "(" expr ")"
+</details>
+Expressions
+
+Operator precedence (lowest to highest):
+
+Level	Operators	Associativity
+1	== !=	left
+2	< > <= >=	left
+3	+ -	left
+4	* / %	left
+5	- ! (prefix)	right
+6	number, true, false, name, ( expr )	
+
+Grouping examples:
+
+1 + 2 * 3        ->  1 + (2 * 3)
+10 - 4 - 3       ->  (10 - 4) - 3
+-2 * 3           ->  (-2) * 3
+a == b < c       ->  a == (b < c)
+a < b < c        ->  (a < b) < c     (not a range check)
+
+Literals: 42, 3.14, true, false
+
+Lexical rules
+<details> <summary>Keywords, identifiers, numbers, operators</summary>
+
+Keywords (lowercase only): let print if else true false
+
+Identifiers: [A-Za-z_][A-Za-z0-9_]*, case-sensitive.
+
+Numbers: integers (42) and decimals (3.14). A decimal needs a digit after the dot, so 7. and .5 are errors. There are no negative literals: -5 is unary minus applied to 5. Numbers are 64-bit floats.
+
+Operators and punctuation:
+
+Symbol	Meaning	Symbol	Meaning
++ - * / %	arithmetic	== !=	equality
+< > <= >=	comparison	!	logical not
+=	assignment	;	statement end
+( )	grouping	{ }	blocks
+
+Comments: // to end of line. Block comments /* */ are not supported.
+
+Whitespace: space, tab, carriage return, newline.
+
+Invalid characters: anything not listed above, including &, | (no logical and/or operators), quotes (no strings), , : . [ ] ? @ # $ ^ ~ \.
+
+</details>
+Errors
+
+Lexer errors stop at the first bad character; parser errors stop at the first problem. Both report a 1-based line and column.
+
+Unexpected character '@' at line 3, column 5.
+Expected ';' after the variable declaration. At line 4, column 1.
+
+A missing ; is reported at the next token, so the line number may point one line below the actual mistake.
+
+<details> <summary>All parser error messages</summary>
+Situation	Message
+Bad start of statement	Expected a statement: let, print, if, a block, or an assignment.
+let without a name	Expected a variable name after 'let'.
+let x 5;	Expected '=' after the variable name.
+Missing ; after let	Expected ';' after the variable declaration.
+Missing ; after assignment	Expected ';' after the assignment.
+print x;	Expected '(' after 'print'.
+Missing ) in print	Expected ')' after the print expression.
+Missing ; after print	Expected ';' after the print statement.
+if x {	Expected '(' after 'if'.
+Missing ) in if	Expected ')' after the if condition.
+No { after if	Expected '{' before the if body.
+No { after else	Expected '{' before the else body.
+Unclosed block	Expected '}' after the block.
+Missing ) in grouping	Expected ')' after the expression.
+No expression found	Expected an expression: a number, boolean, variable, or parenthesized expression.
+Number too large	Number is outside the supported range.
+</details>
+Common mistakes
+Mistake	Why it fails
+print x;	print needs parentheses: print (x);
+if (a > b) print (a);	braces are required
+if a > b { ... }	the condition needs parentheses
+x + 1;	expression statements are not allowed
+let s = "hi";	there are no strings
+if (a && b)	there are no logical and/or operators
+let x = 5.;	a decimal needs a digit after the dot
+Let x = 1;	keywords are lowercase
+/* note */	only // comments exist
+
+
