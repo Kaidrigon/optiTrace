@@ -9,7 +9,7 @@ import type {
     Statement,
     UnaryExpression,
     VariableDeclaration,
-    } from "./ast.js";
+    } from "./ast";
 
     export type OTLValue = number | boolean;
 

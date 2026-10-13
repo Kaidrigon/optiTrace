@@ -1,4 +1,4 @@
-import type { Token, TokenType } from "./lexer.js";
+import type { Token, TokenType } from "./lexer";
 
 import type {
     AssignmentStatement,
@@ -15,7 +15,7 @@ import type {
     Statement,
     UnaryExpression,
     VariableDeclaration,
-    } from "./ast.js";
+    } from "./ast";
 
     export class ParserError extends Error {
     constructor(message: string) {

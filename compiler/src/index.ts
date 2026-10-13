@@ -1,11 +1,6 @@
-﻿import { tokenize } from "./lexer/lexer";
-import { Parser } from "./parser/parser";
-import { lowerToIR } from "./ir/lower";
-import { formatIR } from "./ir/format";
-import { executeIR } from "./runtime/execute";
-import { runOptimizationPipeline } from "./optimizer/pipeline";
-import type { OptimizationOptions } from "./optimizer/pipeline";
-import type { Instruction } from "./ir/instructions";
+﻿import { compileSource as compileOTL } from "./compiler";
+import { formatProgram } from "./format";
+import type { OptimizationOptions } from "./optimizer";
 
 export interface CompileOptions extends OptimizationOptions {
   execute?: boolean;
@@ -17,65 +12,75 @@ export interface ExecutionResult {
   error?: string;
 }
 
+export interface OptimizationStage {
+  name: string;
+  changedCount: number;
+  instructionsBefore: string;
+  instructionsAfter: string;
+}
+
 export interface CompileResult {
   success: boolean;
-  originalIR: Instruction[];
-  optimizedIR: Instruction[];
+  originalIR: string[];
+  optimizedIR: string[];
   originalIRText: string;
   optimizedIRText: string;
-  stages: ReturnType<typeof runOptimizationPipeline>["stages"];
+  stages: OptimizationStage[];
   originalExecution: ExecutionResult;
   optimizedExecution: ExecutionResult;
   error?: string;
 }
 
-function runSafely(instructions: Instruction[]): ExecutionResult {
-  try {
-    return {
-      success: true,
-      output: executeIR(instructions).output,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      output: [],
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
 export function compileSource(
   source: string,
-  options: CompileOptions = {}
+  options: CompileOptions = {},
 ): CompileResult {
   try {
-    const tokens = tokenize(source);
-    const ast = new Parser(tokens).parse();
-    const irProgram = lowerToIR(ast);
-    const originalIR = irProgram.instructions;
-    const optimization = runOptimizationPipeline(originalIR, options);
+    const result = compileOTL(source, options);
 
-    const shouldExecute = options.execute !== false;
+    const originalIRText = formatProgram(result.originalProgram);
+    const optimizedIRText = formatProgram(result.optimizedProgram);
 
-    const originalExecution: ExecutionResult = shouldExecute
-      ? runSafely(originalIR)
-      : { success: true, output: [] };
+    const originalExecution: ExecutionResult = {
+      success: true,
+      output: result.originalOutput,
+    };
 
-    const optimizedExecution: ExecutionResult = shouldExecute
-      ? runSafely(optimization.instructions)
-      : { success: true, output: [] };
+    const optimizedExecution: ExecutionResult = {
+      success: true,
+      output: result.output,
+    };
+
+    
+  const stages: OptimizationStage[] = result.optimizationSteps.map(
+  (step, index) => ({
+    name: `${step.kind}-${index}`,
+    changedCount: 1,
+    instructionsBefore: step.before,
+    instructionsAfter: step.after,
+  }),
+);
+
 
     return {
       success: true,
-      originalIR,
-      optimizedIR: optimization.instructions,
-      originalIRText: formatIR(originalIR),
-      optimizedIRText: formatIR(optimization.instructions),
-      stages: optimization.stages,
+      originalIR: [originalIRText],
+      optimizedIR: [optimizedIRText],
+      originalIRText,
+      optimizedIRText,
+      stages,
       originalExecution,
       optimizedExecution,
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    const failedExecution: ExecutionResult = {
+      success: false,
+      output: [],
+      error: message,
+    };
+
     return {
       success: false,
       originalIR: [],
@@ -83,9 +88,9 @@ export function compileSource(
       originalIRText: "",
       optimizedIRText: "",
       stages: [],
-      originalExecution: { success: false, output: [] },
-      optimizedExecution: { success: false, output: [] },
-      error: error instanceof Error ? error.message : String(error),
+      originalExecution: failedExecution,
+      optimizedExecution: failedExecution,
+      error: message,
     };
   }
 }

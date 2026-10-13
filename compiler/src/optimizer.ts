@@ -3,7 +3,7 @@ import type {
   Statement,
   BlockStatement,
   Expression,
-} from "./ast.js";
+} from "./ast";
 
 type ConstantValue = number | boolean;
 type Constants = Map<string, ConstantValue>;
