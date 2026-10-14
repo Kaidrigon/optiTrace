@@ -265,6 +265,8 @@ and implement the full path from source text to a working OptiTrace
 action. Everything else can wait until the first slice works.
 
 
+(syntax)------>
+
 OTL Language Reference
 
 OTL (OptiTrace Language) is the small procedural language used by OptiTrace. Programs are lexed, parsed into an AST, converted to IR, and then run through the optimization passes.
